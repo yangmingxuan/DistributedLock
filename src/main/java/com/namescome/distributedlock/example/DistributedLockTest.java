@@ -147,7 +147,7 @@ public class DistributedLockTest {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            int lockDuration = 10;
+            int lockDuration = 100;
             String connectString = "172.31.138.138:2181";
             ZooKeeper zooKeeper = null;
             try {
