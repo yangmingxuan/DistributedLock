@@ -187,7 +187,7 @@ public class DistributedLockTest {
             }
             dbLock.unLock(strLockKey, LockValue);
             try {
-                dbLock.getZooKeeper().close();
+                zooKeeper.close();
             } catch (InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
