@@ -58,7 +58,7 @@ public class ZooKeeperLock implements DistributedLock {
         do {
             isGetLock = getLock(LockKey, LockValue);
             if(!isGetLock) {
-                waitLock (LockKey);
+                waitLock(LockKey);
             }
         } while(!isGetLock && startTime + maxWait > System.currentTimeMillis());
         
@@ -111,6 +111,7 @@ public class ZooKeeperLock implements DistributedLock {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+        countDownLatch = null;
     }
 
     public boolean unLock(String LockKey, String LockValue) {

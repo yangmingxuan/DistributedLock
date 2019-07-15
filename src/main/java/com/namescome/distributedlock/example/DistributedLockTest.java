@@ -148,7 +148,7 @@ public class DistributedLockTest {
         private ZooKeeperLock dbLock;
         private CountDownLatch connectedSuc = new CountDownLatch(1);
 
-        ZkLockTest () {
+        ZkLockTest() {
             long maxWait = 300000;       //The max milliseconds for waiting lock
             dbLock = new ZooKeeperLock();
             dbLock.setMaxWait(maxWait);
