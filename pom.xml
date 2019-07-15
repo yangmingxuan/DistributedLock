@@ -23,4 +23,44 @@
         <version>3.4.14</version>
     </dependency>
   </dependencies>
+  <build>
+    <finalName>DistributedLock</finalName>
+    <resources>
+       <!--表示把java目录下的有关xml文件,properties文件编译/打包的时候放在resource目录下-->
+       <resource>
+           <directory>${basedir}/src/main/java</directory>
+           <includes>
+               <!-- <include>**/*.properties</include> -->
+               <include>**/*.xml</include>
+           </includes>
+       </resource>
+       <resource>
+           <directory>${basedir}/src/main/resources</directory>
+           <excludes>
+                <exclude>**/*.properties</exclude>
+           </excludes>
+       </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <!-- Build an executable JAR -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <!-- <artifactId>maven-jar-plugin</artifactId>
+        <version>3.1.0</version> -->
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix>
+              <mainClass>com.namescome.distributedlock.example.DistributedLockTest</mainClass>
+            </manifest>
+          </archive>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+     </plugin>
+    </plugins>
+  </build>
 </project>

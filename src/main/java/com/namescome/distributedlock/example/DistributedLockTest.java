@@ -32,16 +32,32 @@ public class DistributedLockTest {
 
 
     public static void main(String argv[]) {
+        if(argv.length < 1) {
+            System.out.println("Usage: java -jar DistributedLock.jar [1|2|3]");
+            System.out.println("1: No Lock  2: Redis Lock   3: ZooKeeper Lock");
+            return;
+        }
+        
+        int idex = 0;
+        
+        idex = Integer.valueOf(argv[0]);
+        
         DistributedLockTest mytest = new DistributedLockTest();
         
-        //No Lock example
-        //mytest.doNoLockTest();
-
-        //Redis Lock example
-        //mytest.doRedisLockTest();
-
-        //ZooKeeper Lock example
-        mytest.doZkLockTest();
+        switch(idex) {
+        case 1:
+            //No Lock example
+            mytest.doNoLockTest();
+            break;
+        case 2:
+            //Redis Lock example
+            mytest.doRedisLockTest();
+            break;
+        case 3:
+            //ZooKeeper Lock example
+            mytest.doZkLockTest();
+            break;
+        }
     }
 
 
