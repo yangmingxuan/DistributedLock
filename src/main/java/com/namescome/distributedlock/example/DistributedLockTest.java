@@ -3,6 +3,7 @@ package com.namescome.distributedlock.example;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -10,6 +11,7 @@ import org.apache.zookeeper.ZooKeeper;
 
 import com.namescome.distributedlock.common.DistributedLock;
 import com.namescome.distributedlock.redis.RedisLock;
+import com.namescome.distributedlock.zookeeper.ZooKeeperEphemeralSequential;
 import com.namescome.distributedlock.zookeeper.ZooKeeperLock;
 
 import redis.clients.jedis.Jedis;
@@ -57,6 +59,10 @@ public class DistributedLockTest {
             //ZooKeeper Lock example
             mytest.doZkLockTest();
             break;
+        case 4: //Non-atomic operation Not so good
+            //ZooKeeper Ephemeral Sequential Lock example
+            mytest.doZkLockESTest();
+            break;
         }
     }
 
@@ -78,7 +84,7 @@ public class DistributedLockTest {
                 e.printStackTrace();
             }
             counter++;
-            System.out.println(counter);
+            System.out.println(Thread.currentThread().getName() + " " + counter);
         }
         
     }
@@ -130,7 +136,7 @@ public class DistributedLockTest {
             }
             if(dbLock.tryLock(LockKey, LockValue)) {
                 counter++;
-                System.out.println(counter);
+                System.out.println(Thread.currentThread().getName() + " " + counter);
             }
             dbLock.unLock(LockKey, LockValue);
             dbLock.getJedis().close();
@@ -150,7 +156,9 @@ public class DistributedLockTest {
 
         ZkLockTest() {
             long maxWait = 300000;       //The max milliseconds for waiting lock
+            long eachWait = 500;      //Each milliseconds for waiting lock
             dbLock = new ZooKeeperLock();
+            dbLock.setEachWait(eachWait);
             dbLock.setMaxWait(maxWait);
         }
  
@@ -163,7 +171,7 @@ public class DistributedLockTest {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            int lockDuration = 100;
+            int lockDuration = 300000;
             String connectString = "172.31.138.138:2181";
             ZooKeeper zooKeeper = null;
             try {
@@ -182,7 +190,7 @@ public class DistributedLockTest {
                     
                 });
                 try {
-                    connectedSuc.await();  //wait to connected successfully
+                    connectedSuc.await(30000, TimeUnit.MILLISECONDS);  //wait to connected successfully
                 } catch (InterruptedException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -196,12 +204,85 @@ public class DistributedLockTest {
                 return;
             }
             dbLock.setZooKeeper(zooKeeper);
-            String strLockKey = "/" + LockKey;
-            if(dbLock.tryLock(strLockKey, LockValue)) {
+            if(dbLock.tryLock(LockKey, LockValue)) {
                 counter++;
-                System.out.println(counter);
+                System.out.println(Thread.currentThread().getName() + " " + counter);
             }
-            dbLock.unLock(strLockKey, LockValue);
+            dbLock.unLock(LockKey, LockValue);
+            try {
+                zooKeeper.close();
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void doZkLockESTest() {
+        for(int i = 0; i < TOTALNUM; i++) {
+            new Thread(new ZkLockESTest()).start();
+        }
+    }
+
+    class ZkLockESTest implements Runnable {
+        private ZooKeeperEphemeralSequential dbLock;
+        private CountDownLatch connectedSuc = new CountDownLatch(1);
+
+        ZkLockESTest() {
+            long maxWait = 300000;       //The max milliseconds for waiting lock
+            long eachWait = 500;      //Each milliseconds for waiting lock
+            dbLock = new ZooKeeperEphemeralSequential();
+            dbLock.setEachWait(eachWait);
+            dbLock.setMaxWait(maxWait);
+        }
+ 
+        public void run() {
+            String LockValue = UUID.randomUUID().toString() + "_" + Thread.currentThread().getName();
+            cdl.countDown();
+            try {
+                cdl.await();
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            int lockDuration = 300000;
+            String connectString = "172.31.138.138:2181";
+            ZooKeeper zooKeeper = null;
+            try {
+                zooKeeper = new ZooKeeper(connectString, lockDuration, new Watcher() {
+
+                    public void process(WatchedEvent event) {
+                        Event.KeeperState state = event.getState();
+                        Event.EventType type = event.getType();
+                        if(state == Event.KeeperState.SyncConnected) { //if connecting
+                            if(type == Event.EventType.None) { //if connected successfully
+                                connectedSuc.countDown();
+                                //System.out.println("Zookeeper connected successfully");
+                            }
+                        }
+                    }
+                    
+                });
+                try {
+                    connectedSuc.await(30000, TimeUnit.MILLISECONDS);  //wait to connected successfully
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } //
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            if(zooKeeper == null) {
+                System.err.println("Can't Connect the ZooKeeper Server.");
+                return;
+            }
+            dbLock.setZooKeeper(zooKeeper);
+            if(dbLock.tryLock(LockKey, LockValue)) {
+                counter++;
+                System.out.println(Thread.currentThread().getName() + " " + counter);
+            }
+            dbLock.unLock(LockKey, LockValue);
             try {
                 zooKeeper.close();
             } catch (InterruptedException e) {

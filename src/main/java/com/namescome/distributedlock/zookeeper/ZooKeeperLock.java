@@ -1,6 +1,7 @@
 package com.namescome.distributedlock.zookeeper;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -17,6 +18,7 @@ public class ZooKeeperLock implements DistributedLock {
     private CountDownLatch countDownLatch;
 
     private ZooKeeper zooKeeper;
+    private long eachWait = 50;      //Each milliseconds for waiting lock
     private long maxWait = 30000;       //The max milliseconds for waiting lock
     private long startTime;    //Start time for waiting
     
@@ -35,6 +37,20 @@ public class ZooKeeperLock implements DistributedLock {
     }
 
     /**
+     * @return the eachWait
+     */
+    public long getEachWait() {
+        return eachWait;
+    }
+
+    /**
+     * @param eachWait the eachWait to set
+     */
+    public void setEachWait(long eachWait) {
+        this.eachWait = eachWait;
+    }
+
+   /**
      * @return the maxWait
      */
     public long getMaxWait() {
@@ -67,7 +83,7 @@ public class ZooKeeperLock implements DistributedLock {
     
     public boolean getLock(String LockKey, String LockValue) {
         try {
-            zooKeeper.create(LockKey, LockValue.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+            zooKeeper.create('/' + LockKey, LockValue.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
             return true;
         } catch (KeeperException e) {
             // TODO Auto-generated catch block
@@ -83,7 +99,7 @@ public class ZooKeeperLock implements DistributedLock {
     public void waitLock(String LockKey){
         Stat stat = null;
         try {
-            stat = zooKeeper.exists(LockKey, new Watcher() {
+            stat = zooKeeper.exists('/' + LockKey, new Watcher() {
                 public void  process(WatchedEvent event) {
                     if(countDownLatch != null) {
                         countDownLatch.countDown();
@@ -106,7 +122,7 @@ public class ZooKeeperLock implements DistributedLock {
         //wait for the change
         countDownLatch = new CountDownLatch(1);
         try {
-            countDownLatch.await();
+            countDownLatch.await(eachWait, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -116,7 +132,7 @@ public class ZooKeeperLock implements DistributedLock {
 
     public boolean unLock(String LockKey, String LockValue) {
         try {
-            zooKeeper.delete(LockKey, -1);
+            zooKeeper.delete('/' + LockKey, -1);
             // zooKeeper.close();  // close by the call Hierarchy
             return true;
         } catch (InterruptedException e) {
