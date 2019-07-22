@@ -21,6 +21,7 @@ public class ZooKeeperEphemeralSequential implements DistributedLock {
     private CountDownLatch countDownLatch;
 
     private ZooKeeper zooKeeper;
+    private long lockDuration = 30000;   //The lock's expired time
     private long eachWait = 50;      //Each milliseconds for waiting lock
     private long maxWait = 30000;       //The max milliseconds for waiting lock
     private long startTime;    //Start time for waiting
@@ -32,15 +33,31 @@ public class ZooKeeperEphemeralSequential implements DistributedLock {
     /**
      * @return the zooKeeper
      */
-    public ZooKeeper getZooKeeper() {
+    public ZooKeeper getConnection() {
         return zooKeeper;
     }
 
     /**
      * @param zooKeeper the zooKeeper to set
      */
-    public void setZooKeeper(ZooKeeper zooKeeper) {
-        this.zooKeeper = zooKeeper;
+    public void setConnection(Object connection) {
+        this.zooKeeper = (ZooKeeper)connection;
+    }
+
+    /**
+     * @return the lockDuration
+     */
+    public long getLockDuration() {
+        return lockDuration;
+    }
+
+
+
+    /**
+     * @param lockDuration the lockDuration to set
+     */
+    public void setLockDuration(long lockDuration) {
+        this.lockDuration = lockDuration;
     }
 
     /**
@@ -76,7 +93,7 @@ public class ZooKeeperEphemeralSequential implements DistributedLock {
         // TODO Auto-generated constructor stub
     }
 
-    public void initialSpacePath() {
+    private void initialSpacePath() {
         Stat stat = null;
         try {
             stat = zooKeeper.exists(SPACEPATH, false);
@@ -115,7 +132,7 @@ public class ZooKeeperEphemeralSequential implements DistributedLock {
         return isGetLock;
     }
 
-    public boolean getLock(String LockKey, String LockValue) {
+    private boolean getLock(String LockKey, String LockValue) {
         try {
             if (currentPath == null || currentPath.length() <= 0) { //create one time
                 currentPath = zooKeeper.create(SPACEPATH+ '/' + LockKey, LockValue.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
@@ -148,7 +165,7 @@ public class ZooKeeperEphemeralSequential implements DistributedLock {
         }
     }
 
-    public void waitLock(String LockKey) {
+    private void waitLock(String LockKey) {
         Stat stat = null;
         try {
             stat = zooKeeper.exists(LockKey, new Watcher() {

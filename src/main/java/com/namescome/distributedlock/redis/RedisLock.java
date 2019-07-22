@@ -24,7 +24,7 @@ public class RedisLock implements DistributedLock {
     /**
      * @return the jedis
      */
-    public Jedis getJedis() {
+    public Jedis getConnection() {
         return jedis;
     }
 
@@ -33,8 +33,8 @@ public class RedisLock implements DistributedLock {
     /**
      * @param jedis the jedis to set
      */
-    public void setJedis(Jedis jedis) {
-        this.jedis = jedis;
+    public void setConnection(Object connection) {
+        this.jedis = (Jedis)connection;
     }
 
 
@@ -110,7 +110,7 @@ public class RedisLock implements DistributedLock {
         return isGetLock;
     }
 
-    public boolean getLock(String LockKey, String LockValue) {
+    private boolean getLock(String LockKey, String LockValue) {
         String result = jedis.set(LockKey, LockValue, SET_NO_EXIST, SET_WITH_EXPIRED_TIME, lockDuration);
         if(SET_SUCCESS.equalsIgnoreCase(result)) {
             return true;
@@ -118,7 +118,7 @@ public class RedisLock implements DistributedLock {
         return false;
     }
 
-    public void waitLock (String LockKey) {
+    private void waitLock (String LockKey) {
         try {
             Thread.sleep(eachWait);
         } catch (InterruptedException e) {
@@ -141,4 +141,5 @@ public class RedisLock implements DistributedLock {
         }
         return false;
     }
+
 }

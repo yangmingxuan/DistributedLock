@@ -18,6 +18,7 @@ public class ZooKeeperLock implements DistributedLock {
     private CountDownLatch countDownLatch;
 
     private ZooKeeper zooKeeper;
+    private long lockDuration = 30000;   //The lock's expired time
     private long eachWait = 50;      //Each milliseconds for waiting lock
     private long maxWait = 30000;       //The max milliseconds for waiting lock
     private long startTime;    //Start time for waiting
@@ -25,18 +26,34 @@ public class ZooKeeperLock implements DistributedLock {
     /**
      * @return the zooKeeper
      */
-    public ZooKeeper getZooKeeper() {
+    public ZooKeeper getConnection() {
         return zooKeeper;
     }
 
     /**
      * @param zooKeeper the zooKeeper to set
      */
-    public void setZooKeeper(ZooKeeper zooKeeper) {
-        this.zooKeeper = zooKeeper;
+    public void setConnection(Object connection) {
+        this.zooKeeper = (ZooKeeper)connection;
     }
 
     /**
+     * @return the lockDuration
+     */
+    public long getLockDuration() {
+        return lockDuration;
+    }
+
+
+
+    /**
+     * @param lockDuration the lockDuration to set
+     */
+    public void setLockDuration(long lockDuration) {
+        this.lockDuration = lockDuration;
+    }
+
+   /**
      * @return the eachWait
      */
     public long getEachWait() {
@@ -81,7 +98,7 @@ public class ZooKeeperLock implements DistributedLock {
         return isGetLock;
     }
     
-    public boolean getLock(String LockKey, String LockValue) {
+    private boolean getLock(String LockKey, String LockValue) {
         try {
             zooKeeper.create('/' + LockKey, LockValue.getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
             return true;
@@ -96,7 +113,7 @@ public class ZooKeeperLock implements DistributedLock {
         }
     }
 
-    public void waitLock(String LockKey){
+    private void waitLock(String LockKey){
         Stat stat = null;
         try {
             stat = zooKeeper.exists('/' + LockKey, new Watcher() {
@@ -145,4 +162,5 @@ public class ZooKeeperLock implements DistributedLock {
 
         return false;
     }
+
 }

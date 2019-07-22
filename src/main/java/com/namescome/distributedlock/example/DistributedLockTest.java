@@ -111,7 +111,7 @@ public class DistributedLockTest {
     }
 
     class RedisLockTest implements Runnable {
-        private RedisLock dbLock;
+        private DistributedLock dbLock;
         
         RedisLockTest() {
             long lockDuration = 30000;   //The lock's expired time
@@ -121,8 +121,6 @@ public class DistributedLockTest {
             dbLock.setLockDuration(lockDuration);
             dbLock.setEachWait(eachWait);
             dbLock.setMaxWait(maxWait);
-            Jedis jedis = pool.getResource();
-            dbLock.setJedis(jedis);
         }
  
         public void run() {
@@ -134,12 +132,14 @@ public class DistributedLockTest {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
+            Jedis jedis = pool.getResource();
+            dbLock.setConnection(jedis);
             if(dbLock.tryLock(LockKey, LockValue)) {
                 counter++;
                 System.out.println(Thread.currentThread().getName() + " " + counter);
             }
             dbLock.unLock(LockKey, LockValue);
-            dbLock.getJedis().close();
+            jedis.close();
         }
         
     }
@@ -151,13 +151,15 @@ public class DistributedLockTest {
     }
 
     class ZkLockTest implements Runnable {
-        private ZooKeeperLock dbLock;
+        private DistributedLock dbLock;
         private CountDownLatch connectedSuc = new CountDownLatch(1);
 
         ZkLockTest() {
+            long lockDuration = 30000;   //The lock's expired time
             long maxWait = 300000;       //The max milliseconds for waiting lock
             long eachWait = 500;      //Each milliseconds for waiting lock
             dbLock = new ZooKeeperLock();
+            dbLock.setLockDuration(lockDuration);
             dbLock.setEachWait(eachWait);
             dbLock.setMaxWait(maxWait);
         }
@@ -203,7 +205,7 @@ public class DistributedLockTest {
                 System.err.println("Can't Connect the ZooKeeper Server.");
                 return;
             }
-            dbLock.setZooKeeper(zooKeeper);
+            dbLock.setConnection(zooKeeper);
             if(dbLock.tryLock(LockKey, LockValue)) {
                 counter++;
                 System.out.println(Thread.currentThread().getName() + " " + counter);
@@ -225,7 +227,7 @@ public class DistributedLockTest {
     }
 
     class ZkLockESTest implements Runnable {
-        private ZooKeeperEphemeralSequential dbLock;
+        private DistributedLock dbLock;
         private CountDownLatch connectedSuc = new CountDownLatch(1);
 
         ZkLockESTest() {
@@ -277,7 +279,7 @@ public class DistributedLockTest {
                 System.err.println("Can't Connect the ZooKeeper Server.");
                 return;
             }
-            dbLock.setZooKeeper(zooKeeper);
+            dbLock.setConnection(zooKeeper);
             if(dbLock.tryLock(LockKey, LockValue)) {
                 counter++;
                 System.out.println(Thread.currentThread().getName() + " " + counter);
